@@ -1,0 +1,51 @@
+Codigo del reloj y link donde se implementa: https://www.espruino.com/ide/#    Metodo de comunicacion: BLE(Bluetooth Low Energy).
+
+// Activar el sensor de ritmo cardiaco
+Bangle.setHRMPower(1);
+
+// Variable global para guardar BPM
+var bpm = 0;
+
+// Intervalo para enviar datos cada 5 segundos
+setInterval(function() {
+  if (bpm > 0) {
+    var data = {
+      bpm: bpm,
+      timestamp: Date.now()
+    };
+    Bluetooth.println(JSON.stringify(data));
+  }
+}, 5000);
+
+// Dibujar BPM en pantalla
+function draw() {
+  g.clear();
+  g.setFontAlign(0, 0); 
+  g.setFont("Vector", 40);
+  g.drawString(bpm + " BPM", g.getWidth()/2, g.getHeight()/2);
+}
+
+// Actualizar BPM al recibir nueva lectura confiable
+Bangle.on('HRM', function(hrm) {
+  if (hrm.confidence > 80) {
+    bpm = hrm.bpm;
+    draw();
+  }
+});
+
+// Mantener HRM activo
+Bangle.setHRMPower(1);
+
+// Redibujar al girar muñeca o encender pantalla
+Bangle.on('lcdPower', function(on) {
+  if (on) draw();
+});
+
+// Salir al menú cuando presiones BTN1
+setWatch(() => {
+  Bangle.setHRMPower(0); // Apaga el sensor
+  load(); // Vuelve al menú
+}, BTN1, {repeat: false, edge: "falling"});
+
+// Dibuja primera vez
+draw();
